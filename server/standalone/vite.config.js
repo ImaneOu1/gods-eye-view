@@ -31,7 +31,13 @@ export default defineConfig(({ command, mode }) => {
     mapillaryToken: process.env.MAPILLARY_CLIENT_TOKEN,
     host: process.env.HOST,
     port: process.env.PORT,
-    allowedHosts: resolveAllowedHosts(process.env.GEV_ALLOWED_HOSTS),
+    allowedHosts: resolveAllowedHosts(process.env.GEV_ALLOWED_HOSTS, {
+      // The sandbox preview proxy delivers the app under a rotating
+      // `<port>-<sandbox id>.$BASE44_SANDBOX_HOST_DOMAIN` Host header, so the
+      // exact name cannot be pinned. Suffix wildcards stay ignored in every
+      // other launch (see build/allowedHosts.js).
+      allowSuffixWildcards: process.env.BASE44_PREVIEW_MODE === '1',
+    }),
     command,
   });
 });

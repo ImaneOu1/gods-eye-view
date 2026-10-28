@@ -18,13 +18,27 @@ export const DEFAULT_ALLOWED_HOSTS = Object.freeze(['localhost', '127.0.0.1']);
  * which would defeat an explicit host policy.
  *
  * @param {string|undefined|null} configuredHosts
+ * @param {{allowSuffixWildcards?: boolean}} [options] When true, a leading-dot
+ *   entry is kept as a suffix wildcard instead of being ignored. The Base44
+ *   sandbox preview reaches the server as a rotating `<port>-<sandbox
+ *   id>.<host domain>` name, so that one environment opts in; every other
+ *   launch keeps the explicit-only policy above. `*` entries stay rejected
+ *   either way — Vite does not expand them to subdomains.
  * @returns {string[]}
  */
-export function resolveAllowedHosts(configuredHosts) {
+export function resolveAllowedHosts(
+  configuredHosts,
+  { allowSuffixWildcards = false } = {},
+) {
   const hosts = String(configuredHosts ?? '')
     .split(',')
     .map((host) => host.trim())
-    .filter((host) => host && !host.startsWith('.') && !host.includes('*'));
+    .filter(
+      (host) =>
+        host &&
+        !host.includes('*') &&
+        (allowSuffixWildcards || !host.startsWith('.')),
+    );
   return [...new Set([...DEFAULT_ALLOWED_HOSTS, ...hosts])];
 }
 

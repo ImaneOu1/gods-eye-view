@@ -1,0 +1,79 @@
+# Base44 sandbox environment for God's Eye View.
+#
+# The dev server IS the whole app: Vite serves the client and runs the API
+# proxies (ADS-B, AIS, Overpass, OpenAI Realtime, ...) as middleware, so there
+# is one application service. It runs from the bind-mounted checkout with a
+# plain Node runtime image — never the project's own Dockerfile image — so
+# source edits stay live.
+#
+# Deliberate differences from the repo's own compose.yaml:
+#   * the checkout is run, not a `COPY . .` image, and `npm ci` runs at
+#     container start (node_modules lives in the checkout, so it survives a
+#     container recreate);
+#   * the published host port is 3000 (the sandbox's preview port), mapped to
+#     the same port inside so Vite's client connects HMR to the page's own
+#     address through the preview proxy;
+#   * GEV_ALLOWED_HOSTS carries a suffix wildcard for the sandbox host domain,
+#     which build/allowedHosts.js only honours while BASE44_PREVIEW_MODE=1.
+#     The proxy reaches the app as `<port>-<sandbox id>.$BASE44_SANDBOX_HOST_DOMAIN`
+#     and that id rotates, so the exact name cannot be pinned.
+services:
+  web:
+    image: node:24.14.0-slim
+    working_dir: /app
+    restart: on-failure
+    labels:
+      base44.project: "God's Eye View"
+      base44.kind: web
+      base44.port: "3000"
+    # Install from the lockfile only when node_modules is absent or was built
+    # from a different lockfile, then exec the dev launcher (which is `npm run
+    # dev` plus the trusted-peer step its own Dockerfile documents).
+    # External provider credentials (Google, Cesium ion, OpenAI, Mapillary,
+    # AISStream, OpenSky, Gemini, NASA FIRMS, TomTom) are supplied by the user
+    # through the Base44 dashboard; the platform delivers them to this file
+    # outside the repo. Keys listed under `environment:` below outrank it, so
+    # they stay limited to the sandbox's own port/host settings.
+    env_file:
+      - /run/base44/app.env
+    command:
+      - sh
+      - -ec
+      - |
+        if [ ! -d node_modules/vite ] || ! cmp -s package-lock.json node_modules/.base44-lock; then
+          npm ci --no-audit --no-fund
+          cp package-lock.json node_modules/.base44-lock
+        fi
+        exec node scripts/docker-start.mjs
+    ports:
+      - "3000:3000"
+    environment:
+      # Puppeteer is only used by the QA scripts; skip its Chromium download.
+      - PUPPETEER_SKIP_DOWNLOAD=1
+      # Bind every interface inside the container's namespace; publishing is
+      # still host port 3000 only.
+      - HOST=0.0.0.0
+      - PORT=3000
+      # Suffix wildcard for the sandbox preview proxy's rotating host.
+      - GEV_ALLOWED_HOSTS=.${BASE44_SANDBOX_HOST_DOMAIN}
+      # Passed through so the config can tell it is running in the sandbox.
+      - BASE44_PREVIEW_MODE
+      - BASE44_SANDBOX_HOST_DOMAIN
+    volumes:
+      # Source bind mount: edits hot-reload, and what the app writes (.env from
+      # Provider Settings, .gev-cache, .gev-logs) lands in the checkout.
+      - .:/app
+    healthcheck:
+      # node:slim has no curl; 127.0.0.1 is always on the app's Host allowlist.
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:'+(Number.parseInt(process.env.PORT,10)||3000)+'/').then((r)=>process.exit(r.ok?0:1),()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 10s
+      # Generous: the first start installs the locked dependency tree.
+      start_period: 600s
+      retries: 3

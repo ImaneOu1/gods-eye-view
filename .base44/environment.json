@@ -1,0 +1,62 @@
+{
+  "previewPort": 3000,
+  "healthPath": "/",
+  "startCommand": "docker compose -f docker-compose.base44.yml up -d",
+  "secrets": [
+    {
+      "name": "GOOGLE_MAPS_API_KEY",
+      "description": "Google Maps Platform key (Map Tiles API) for photorealistic 3D tiles, GEV place search and Street View. Client-exposed by design — restrict it by HTTP referrer in Google Cloud Console → APIs & Services → Credentials. Optional: without it the app starts on keyless Esri World Imagery.",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "GOOGLE_MAPS_SERVER_API_KEY",
+      "description": "Optional separate server-side Google key for Places (/api/google/nearby-places, /api/google/text-search) and the CCTV Street View fallback; falls back to GOOGLE_MAPS_API_KEY when unset.",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "CESIUM_ION_TOKEN",
+      "description": "Cesium ion public assets:read token (ion imagery, Bing imagery, Cesium World Terrain). Client-exposed — use a URL-restricted token. cesium.com/ion/tokens. Optional.",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "OPENAI_API_KEY",
+      "description": "OpenAI key for Realtime voice control and the HUD summary (/api/realtime/token, /api/openai/hud-summary). platform.openai.com → API keys. Optional: voice stays off without it.",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "GEMINI_API_KEY",
+      "description": "Google AI Studio key for the Gemini Live voice provider (the second entry in the voice provider selector). aistudio.google.com → API keys. Optional.",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "MAPILLARY_CLIENT_TOKEN",
+      "description": "Mapillary client token for the Street Level imagery layer. mapillary.com/dashboard/developers → register an app → Client Token. Client-exposed by design. Optional.",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "AISSTREAM_API_KEY",
+      "description": "AISStream key for the live vessels layer, used server-side by the /api/vessels proxy. aisstream.io. Optional: the layer stays empty without it.",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "OPENSKY_CLIENT_ID",
+      "description": "OpenSky OAuth client id (opensky-network.org account dashboard → API clients). Paired with OPENSKY_CLIENT_SECRET; set OPENSKY_AUTH_MODE=oauth (the default) to use it. Optional: aircraft fall back to anonymous, rate-limited access.",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "OPENSKY_CLIENT_SECRET",
+      "description": "OpenSky OAuth client secret, paired with OPENSKY_CLIENT_ID.",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "FIRMS_MAP_KEY",
+      "description": "NASA FIRMS map key for the Active Fires layer (firms.modaps.eosdis.nasa.gov/api/map_key). Server-side only. Optional: the layer shows \"KEY REQUIRED\" without it.",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "TOMTOM_API_KEY",
+      "description": "TomTom key for live traffic flow tiles (/api/tomtom/*). my.tomtom.com/keys. Optional: the traffic layer uses its built-in keyless simulation instead.",
+      "requiredAtBoot": false
+    }
+  ]
+}
